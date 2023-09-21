@@ -1,4 +1,16 @@
 #include<windows.h>
+#include<stdint.h>
+
+// unsigned integers
+typedef uint8_t u8;     // 1-byte long unsigned integer
+typedef uint16_t u16;   // 2-byte long unsigned integer
+typedef uint32_t u32;   // 4-byte long unsigned integer
+typedef uint64_t u64;   // 8-byte long unsigned integer
+// signed integers
+typedef int8_t s8;      // 1-byte long signed integer
+typedef int16_t s16;    // 2-byte long signed integer
+typedef int32_t s32;    // 4-byte long signed integer
+typedef int64_t s64;    // 8-byte long signed integer
 
 #define local_persist static;
 #define global_variable static;
@@ -21,7 +33,7 @@ Win32ResizeDIBSection(int Width, int Height)
     }
   BitmapInfo.bmiHeader.biSize = sizeof(BitmapInfo.bmiHeader);
   BitmapInfo.bmiHeader.biWidth = BitmapWidth;
-  BitmapInfo.bmiHeader.biHeight = BitmapHeight;
+  BitmapInfo.bmiHeader.biHeight = -BitmapHeight;
   BitmapInfo.bmiHeader.biPlanes = 1;
   BitmapInfo.bmiHeader.biBitCount = 32;
   BitmapInfo.bmiHeader.biCompression = BI_RGB;
@@ -33,6 +45,29 @@ Win32ResizeDIBSection(int Width, int Height)
   int BitmapMemorySize = BytesPerPixel * (Width * Height);
 
   BitmapMemory = VirtualAlloc(0, BitmapMemorySize, MEM_COMMIT, PAGE_READWRITE);
+  int Pitch = Width * BytesPerPixel;
+  u8 *Row = (u8 *)BitmapMemory;
+  for (int Y = 0; Y < BitmapHeight; ++Y)
+    {
+      u8 *Pixel = (u8 *)Row;
+      for (int X = 0; X < BitmapWidth; ++X)
+	{
+	  *Pixel = (u8)X;
+	  ++Pixel;
+
+	  *Pixel = (u8)Y;
+	  ++Pixel;
+
+	  *Pixel = 0;
+	  ++Pixel;
+
+	  *Pixel = 0;
+	  ++Pixel;
+
+	  
+	}
+      Row += Pitch;
+    }
 }
 
 internal void
