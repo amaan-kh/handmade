@@ -22,6 +22,30 @@ global_variable BITMAPINFO BitmapInfo;
 global_variable void *BitmapMemory;
 global_variable int BitmapHeight;
 global_variable int BitmapWidth;
+global_variable int BytesPerPixel;
+
+internal void
+RenderWeirdGradient(int XOffset, int YOffset)
+{
+    int Pitch = BitmapWidth * BytesPerPixel;
+    u8 *Row = (u8 *)BitmapMemory;
+    for (int Y = 0;
+         Y < BitmapHeight;
+         ++Y)
+      {
+        u32 *Pixel = (u32 *)Row;
+        for(int X = 0;
+            X < BitmapWidth;
+            ++X)
+	  {
+	    u8 Red = 0;
+	    u8 Green = (u8)(Y + YOffset);
+	    u8 Blue = (u8)(X + XOffset);
+	    *Pixel++ = Red << 16 | Green << 8 | Blue;
+	  }
+		Row += Pitch;
+	}
+}
 
 
 internal void
@@ -41,33 +65,10 @@ Win32ResizeDIBSection(int Width, int Height)
   BitmapWidth = Width;
   BitmapHeight = Height;
 
-  int BytesPerPixel = 4;
+  BytesPerPixel = 4;
   int BitmapMemorySize = BytesPerPixel * (Width * Height);
 
-  BitmapMemory = VirtualAlloc(0, BitmapMemorySize, MEM_COMMIT, PAGE_READWRITE);
-  int Pitch = Width * BytesPerPixel;
-  u8 *Row = (u8 *)BitmapMemory;
-  for (int Y = 0; Y < BitmapHeight; ++Y)
-    {
-      u8 *Pixel = (u8 *)Row;
-      for (int X = 0; X < BitmapWidth; ++X)
-	{
-	  *Pixel = (u8)X;
-	  ++Pixel;
-
-	  *Pixel = (u8)Y;
-	  ++Pixel;
-
-	  *Pixel = 0;
-	  ++Pixel;
-
-	  *Pixel = 0;
-	  ++Pixel;
-
-	  
-	}
-      Row += Pitch;
-    }
+  BitmapMemory = VirtualAlloc(0, BitmapMemorySize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
 }
 
 internal void
@@ -180,23 +181,34 @@ WinMain(HINSTANCE Instance,
 			Instance,
 			0);
       if(Window)
-	{ Running = true;
+	{ int XOffset = 0;
+	  int YOffset = 0;
+	  Running = true;
 	  while(Running)                            // a for loop which would run forever
 	    {
 	      MSG Message;
-	      BOOL MessageResult = GetMessage(&Message, 0, 0, 0);
-	      if (MessageResult > 0)          // 0 is the WM_QUIT message, -1 is invalid
+	      while(PeekMessage(&Message, 0, 0, 0, PM_REMOVE))
 		{
-		  // Do work in your window
+		  if (Message.message == WM_QUIT)
+		    {
+		      Running = false;
+		    }
 		  TranslateMessage(&Message);
 		  DispatchMessageA(&Message);
 		}
-	      else
-		{
-		  break;                      // break out of the loop
-		}
-	    
+	      RenderWeirdGradient(XOffset, YOffset);
+	      ++XOffset;
+	      
+	      HDC DeviceContext = GetDC(Window);
+	      RECT ClientRect;
+	      GetClientRect(Window, &ClientRect);
+	      
+	      Win32UpdateWindow(DeviceContext, &ClientRect);
+    
+	      ReleaseDC(Window, DeviceContext);
 	    }
+	    
+	    
 	}
       else
 	{
