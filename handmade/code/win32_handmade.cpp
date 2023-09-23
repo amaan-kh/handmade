@@ -230,7 +230,8 @@ WinMain(HINSTANCE Instance,
 	      ++XOffset;
 	      
 	      win32_window_dimension Dimension = Win32GetWindowDimension(Window);
-	      Win32ResizeDIBSection(&GlobalBackbuffer, Dimension.Width, Dimension.Height);
+	      Win32DisplayBufferInWindow(&GlobalBackbuffer, DeviceContext, Dimension.Width, Dimension.Height);
+	    
 	    }
 	  
 	    
